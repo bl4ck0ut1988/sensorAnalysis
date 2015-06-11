@@ -24,7 +24,7 @@ def calculateValues(timeStamps, values, axisName, baseDirectory, timeUnit):
     plt.ylabel('deg/s')
     plt.plot(x, y)
     plt.plot(timeStamps, values)
-    plt.savefig(baseDirectory+'results/'+axisName+'.png')
+    plt.savefig(baseDirectory+'results_unfiltered/'+axisName+'.png')
     plt.clf()
     #plt.show()
 
@@ -50,7 +50,7 @@ def calculateValues(timeStamps, values, axisName, baseDirectory, timeUnit):
     print min+'\n', max+'\n', mean+'\n', ptp+'\n', rms+'\n'
 
     #open and write into output file:
-    outputFile = open(baseDirectory+'results/output_data.txt', 'a')
+    outputFile = open(baseDirectory+'results_unfiltered/output_data.txt', 'a')
     outputFile.write(axisName+"\n")
     outputFile.write(min+'\n')
     outputFile.write(max+'\n')
@@ -126,15 +126,14 @@ def extractDataExcel(fileLocation): #Won't work if Excel file is open
     return extractedData
 
 
-def buildTimestampTable(listOfExtractedDataValedo, axis, baseDirectory):
+def buildTimestampTable(listOfExtractedDataValedo, axis, destinationDirectory):
 
     timeStamps = []
     axes = {1: 'x', 2: 'y', 3: 'z'}
 
     #Check if results folder already exists
-    folderName = 'timestamp_tables'
-    if not os.path.exists(baseDirectory+folderName):
-        os.makedirs(baseDirectory+folderName)
+    if not os.path.exists(destinationDirectory):
+        os.makedirs(destinationDirectory)
 
     print 'Creating '+axes[axis]+'-axis.xlsx ...\n'
 
@@ -146,7 +145,7 @@ def buildTimestampTable(listOfExtractedDataValedo, axis, baseDirectory):
     timeStamps.sort()
 
     #setup excel file
-    workbook = xlsxwriter.Workbook(baseDirectory+folderName+'/'+axes[axis]+'-axis.xlsx')
+    workbook = xlsxwriter.Workbook(destinationDirectory+'/valedo_'+axes[axis]+'-axis.xlsx')
     worksheet = workbook.add_worksheet()
     cellWidth = 15
     worksheet.set_column('A:A', cellWidth)
@@ -171,15 +170,14 @@ def buildTimestampTable(listOfExtractedDataValedo, axis, baseDirectory):
     print axes[axis]+'-axis.xlsx was created successfully!\n'
 
 
-def filterData(fileLocation):
+def filterData(fileSource, fileDestination):
     print 'Computing filtered data for all axes ...'
-    files = os.listdir(fileLocation+'timestamp_tables')
+    files = os.listdir(fileSource)
     axisDataFiles = []
 
-    #create folder for output excel file (filtered)
-    folderName = 'filtered'
-    if not os.path.exists(fileLocation+'timestamp_tables/'+folderName):
-        os.makedirs(fileLocation+'timestamp_tables/'+folderName)
+    #Check if results folder already exists
+    if not os.path.exists(fileDestination):
+        os.makedirs(fileDestination)
 
     #Extract the desired excel files with the axis data
     for i in range(len(files)):
@@ -193,7 +191,7 @@ def filterData(fileLocation):
         sensor2 = []
         sensor3 = []
 
-        sensorData = xlrd.open_workbook(fileLocation+'timestamp_tables/'+axisDataFiles[i])
+        sensorData = xlrd.open_workbook(fileSource+axisDataFiles[i])
         worksheetIn = sensorData._sheet_list[0]
         numberOfValues = worksheetIn.nrows-1 #subtract the line with sensor names
         for j in range(1, worksheetIn.nrows-(numberOfValues % 5)):
@@ -237,7 +235,7 @@ def filterData(fileLocation):
             currentAxisData[j] = tempFilteredList #set the corrected (filtered list) with added gaps
 
         #Setup the excel output file for the filtered data of a specific axis for all 3 sensors.
-        workbook = xlsxwriter.Workbook(fileLocation+'timestamp_tables/'+folderName+'/filtered_'+axisDataFiles[i])
+        workbook = xlsxwriter.Workbook(fileDestination+'/filtered_'+axisDataFiles[i])
         worksheetOut = workbook.add_worksheet()
         cellWidth = 15
         worksheetOut.set_column('A:A', cellWidth)
@@ -295,7 +293,7 @@ def filterData(fileLocation):
         worksheetOut.write(len(currentAxisData), len(currentAxisData)+4, np.std(sensorMeans))
 
         #Draw and save Histogram (x-range: -0.1 - 0.1)
-        drawHisto(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/')
+        drawHisto(sensorMeans, axisDataFiles[i][:-5], fileDestination)
         #drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
 
         workbook.close()
