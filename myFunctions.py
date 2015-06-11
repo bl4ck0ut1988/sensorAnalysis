@@ -211,7 +211,7 @@ def filterData(fileLocation):
 
         for j in range(1, 4): #loop trough every sensor(1-3)
             tempFilteredList = currentAxisData[j][:] #create copy of current list (new gaps will be added to this list).
-            print 'Len of current list: '+str(len(currentAxisData[j]))
+
             for k in range(0, len(currentAxisData[j])-5, 5): #take current 10 values for the algorithm and afterwards move forward 5 "steps". Note that the untouched values are cut out of the analysis
                 tempValueList = []
                 #print str(k)+' - '+str(k+10)+': '
