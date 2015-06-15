@@ -177,6 +177,62 @@ def buildTimestampTable(listOfExtractedDataValedo, axis, destinationDirectory):
 
     print axes[axis]+'-axis.xlsx was created successfully!\n'
 
+def computeRawData(fileSource, fileDestination):
+    print 'Computing unfiltered data for all axes ...'
+    files = os.listdir(fileSource)
+    axisDataFiles = []
+
+    #Extract the desired excel files with the axis data
+    for i in range(len(files)):
+        if files[i].endswith('.xlsx'):
+            axisDataFiles.append(files[i])
+
+    #Extract timestamps and values from one axis (e.g. x-axis) and do calculations
+    for i in range(len(axisDataFiles)):
+        timeStamps = []
+        sensor1 = []
+        sensor2 = []
+        sensor3 = []
+
+        sensorData = xlrd.open_workbook(fileSource+axisDataFiles[i])
+        worksheetIn = sensorData._sheet_list[0]
+        numberOfValues = worksheetIn.nrows-1 #subtract the line with sensor names
+        for j in range(1, worksheetIn.nrows-(numberOfValues % 5)):
+            timeStamps.append(worksheetIn.cell_value(j, 0))
+            sensor1.append(worksheetIn.cell_value(j, 1))
+            sensor2.append(worksheetIn.cell_value(j, 2))
+            sensor3.append(worksheetIn.cell_value(j, 3))
+
+        #Sum all lists for current axis to simplify accessing via index
+        currentAxisData = []
+        currentAxisData.append(timeStamps)
+        currentAxisData.append(sensor1)
+        currentAxisData.append(sensor2)
+        currentAxisData.append(sensor3)
+
+        #Write timestamps and filtered values into output excel file and compute mean of 3 sensors.
+        sensorMeans = []
+        timeStampsMeans = []
+
+        for j in range(len(currentAxisData[0])): #iterate over every line of the data and exclude the values untouched by the algorithm
+            tempSensorData = []
+
+            for k in range(1, 4): #iterate over all sensors and add value(if no gap), calculate mean and add to list
+                if not currentAxisData[k][j] == '': #Exclude gaps for mean calculation
+                    tempSensorData.append(currentAxisData[k][j])
+
+            #if tempSensorData isnt an empty list, mean it and write timestamp + value into excel output file and lists.
+            if tempSensorData:
+                sensorMean = np.mean(tempSensorData)
+                timeStampsMeans.append(currentAxisData[0][j]) #Add current timestamp for meaned values to list
+                sensorMeans.append(sensorMean)
+
+                #calculate Values for current axis (mean of all 3 sensors)
+        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination, 'ms', 'unfiltered_')
+
+        #Draw and save Histogram for current axis (mean of all 3 sensors)
+        drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination)
+        #drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
 
 
 def filterData(fileSource, fileDestination, tableFolder):
@@ -265,10 +321,10 @@ def filterData(fileSource, fileDestination, tableFolder):
         worksheetOut.write('H1', 'Mean:', bold)
         worksheetOut.write('I1', 'Sd:', bold)
 
+        #Write timestamps and filtered values into output excel file and compute mean of 3 sensors.
         sensorMeans = []
         timeStampsMeans = []
 
-        #Write timestamps and filtered values into output excel file and compute mean of 3 sensors.
         for j in range(len(currentAxisData[0])): #iterate over every line of the data and exclude the values untouched by the algorithm
             tempSensorData = []
             worksheetOut.write(j+1, 0, currentAxisData[0][j]) # Write timestamp into output excel file
@@ -312,4 +368,4 @@ def filterData(fileSource, fileDestination, tableFolder):
 
         workbook.close()
 
-    print 'done !'
+    print 'done!'

@@ -45,35 +45,39 @@ for i in range(len(listValedo)):
 for i in range(1, 4):
     mf.buildTimestampTable(listExtractedValedoData, i, basedir+outputDirUnfiltered+tablesFolder)
 
+#Compute raw data and generate figures
+mf.computeRawData(basedir+outputDirUnfiltered+tablesFolder, basedir+outputDirUnfiltered)
+
 #create filtered timestamp tables and figures using Prof. Allums algorihm
 mf.filterData(basedir+outputDirUnfiltered+tablesFolder, basedir+outputDirFiltered, tablesFolder)
-
-#Process Valedo data
-#Calculate values of interest for every axis and create figures
-for i in range(len(listValedo)):
-    print '\n----------------------------------------\nData from: Valedo '+listValedo[i][-11:-4]
-
-    axisName = ['valedo_x-axis', 'valedo_y-axis', 'valedo_z-axis']
-
-    for j in range(1, 4):
-        print '\n'+axisName[j-1]+':'
-        mf.calculateValues(extractedData[0], extractedData[j], listValedo[i][-11:-4]+'_'+axisName[j-1], basedir+outputDirUnfiltered, 'ms',  'unfiltered_')
-
-        #Histogram
-        mf.drawHisto(extractedData[j], listValedo[i][-11:-4]+'_'+axisName[j-1], basedir+outputDirUnfiltered)
-
 
 #Process SwayStar data
 #Calculate values of interest for every axis and create figures
 for i in range(len(listSway)):
-    print '\n----------------------------------------\nData from SwayStar:'
+    print '\n----------------------------------------\nComputing SwayStar data ...'
     extractedData = mf.extractDataSwayStar(basedir+'/'+listSway[i])
 
     axisName = ['SwayStar_roll-axis', 'SwayStar_pitch-axis']
     for j in range(1, 3):
-        print '\n'+axisName[j-1]+':'
         mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], basedir+outputDirUnfiltered, 's',  'unfiltered_')
 
         #Histogram
         mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered)
         #mf.drawHistoXrange(extractedData[j], 'SwayStar_'+axisName[j-1], basedir+'results/', -0.1, 0.1)
+print 'done!'
+
+# #Process Valedo data
+# #Calculate values of interest for every axis and create figures
+# for i in range(len(listValedo)):
+#     print '\n----------------------------------------\nData from: Valedo '+listValedo[i][-11:-4]
+#
+#     axisName = ['valedo_x-axis', 'valedo_y-axis', 'valedo_z-axis']
+#
+#     for j in range(1, 4):
+#         print '\n'+axisName[j-1]+':'
+#         mf.calculateValues(extractedData[0], extractedData[j], listValedo[i][-11:-4]+'_'+axisName[j-1], basedir+outputDirUnfiltered, 'ms',  'unfiltered_')
+#
+#         #Histogram
+#         mf.drawHisto(extractedData[j], listValedo[i][-11:-4]+'_'+axisName[j-1], basedir+outputDirUnfiltered)
+#
+#
