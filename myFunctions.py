@@ -14,7 +14,7 @@ def graph(formula, x_range):
 
 
 
-def calculateValues(timeStamps, values, axisName, baseDirectory, timeUnit, filterStatus):
+def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, timeUnit, filterStatus):
 
     fit = polyfit(timeStamps, values, 1)
     #plot data
@@ -23,8 +23,8 @@ def calculateValues(timeStamps, values, axisName, baseDirectory, timeUnit, filte
     #plt.axis([int(np.min(timeStamps)), int(np.max(timeStamps)), int(np.min(values)), int(np.max(values))])
     plt.title(axisName)
     plt.xlabel(timeUnit)
-    plt.ylabel('deg/s')
-    plt.plot(x, y)
+    plt.ylabel(yLabel)
+    #plt.plot(x, y)
     plt.plot(timeStamps, values)
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
@@ -45,7 +45,7 @@ def calculateValues(timeStamps, values, axisName, baseDirectory, timeUnit, filte
     min = "Min: "+str(np.min(values))
     max = "Max: "+str(np.max(values))
     mean = "Mean: "+str(np.mean(values))
-    ptp = "Peak to peak range: "+str(np.max(values)-np.min(values))
+    ptp = "Ptp range: "+str(np.max(values)-np.min(values))
     sd = "Standard Deviation: "+str(np.std(values))
     rms = "Noise (rms): "+str(rms)
     #print values
@@ -113,23 +113,29 @@ def extractDataValedo(fileLocation):
 
 #Extracts timestamps and corresponding angular velocities (roll and pitch)
 #Returns a list containing 3 more sub lists with timestamps and angular velocities (pitch and roll)
-#Lists can be accessed by index: [0]: timestamps, [1] AV roll-axis, [2] AV pitch-axis
+#Lists can be accessed by index: [0]: timestamps, [1] AV roll-axis, [2] AV pitch-axis, [3] A roll-axis, [4] A pitch-axis
 def extractDataSwayStar(fileLocation): #Won't work if Excel file is open
     sensorData = xlrd.open_workbook(fileLocation)
     worksheet = sensorData._sheet_list[0]
     extractedData = []
     timeStamp = []
+    a_roll = []
     av_roll = []
+    a_pitch = []
     av_pitch = []
 
     for i in range(2, worksheet.nrows): #Iterate over all relevant lines in excel file and extract values.
-        timeStamp.append(worksheet.cell_value(i, 3))
+        timeStamp.append(worksheet.cell_value(i, 0))
+        a_roll.append(worksheet.cell_value(i, 1))
+        a_pitch.append(worksheet.cell_value(i, 2))
         av_roll.append(worksheet.cell_value(i, 4))
         av_pitch.append(worksheet.cell_value(i, 5))
 
     extractedData.append(timeStamp)
     extractedData.append(av_roll)
     extractedData.append(av_pitch)
+    extractedData.append(a_roll)
+    extractedData.append(a_pitch)
 
     return extractedData
 
@@ -152,7 +158,7 @@ def buildTimestampTable(listOfExtractedDataValedo, axis, destinationDirectory):
                 timeStamps.append(timeStamp)
     timeStamps.sort()
 
-    #setup excel file
+    #setup output excel file
     workbook = xlsxwriter.Workbook(destinationDirectory+'/valedo_'+axes[axis]+'-axis.xlsx')
     worksheet = workbook.add_worksheet()
     cellWidth = 15
@@ -176,6 +182,7 @@ def buildTimestampTable(listOfExtractedDataValedo, axis, destinationDirectory):
     workbook.close()
 
     print axes[axis]+'-axis.xlsx was created successfully!\n'
+
 
 def computeRawData(fileSource, fileDestination):
     print 'Computing unfiltered data for all axes ...'
@@ -228,14 +235,14 @@ def computeRawData(fileSource, fileDestination):
                 sensorMeans.append(sensorMean)
 
                 #calculate Values for current axis (mean of all 3 sensors)
-        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination, 'ms', 'unfiltered_')
+        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', 'deg/s', fileDestination, 'ms', 'unfiltered_')
 
         #Draw and save Histogram for current axis (mean of all 3 sensors)
         drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination)
         #drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
 
 
-def filterData(fileSource, fileDestination, tableFolder):
+def filterData(fileSource, fileDestination, tableFolder, sampleRange, sdFactor):
     print 'Computing filtered data for all axes ...'
     files = os.listdir(fileSource)
     axisDataFiles = []
@@ -278,7 +285,7 @@ def filterData(fileSource, fileDestination, tableFolder):
             for k in range(0, len(currentAxisData[j])-5, 5): #take current 10 values for the algorithm and afterwards move forward 5 "steps". Note that the untouched values are cut out of the analysis
                 tempValueList = []
                 #print str(k)+' - '+str(k+10)+': '
-                for m in range(10):
+                for m in range(sampleRange):
                     if not currentAxisData[j][k+m] == '': #Extract the current Values (without gaps). --> used for calculation of mean/sd
                         tempValueList.append(currentAxisData[j][k+m])
 
@@ -288,9 +295,9 @@ def filterData(fileSource, fileDestination, tableFolder):
                 tempSd = np.std(tempValueList)
 
                 #check criteria for every value in the filtered list and replace with gap if out of range.
-                for m in range(10):
+                for m in range(sampleRange):
                     if not tempFilteredList[k+m] == '': #before comparing to mean and sd, make sure it is a float
-                        if tempFilteredList[k+m] > (tempMean+1.75*tempSd) or tempFilteredList[k+m] < (tempMean-1.75*tempSd):
+                        if tempFilteredList[k+m] > (tempMean+sdFactor*tempSd) or tempFilteredList[k+m] < (tempMean-sdFactor*tempSd):
                             tempFilteredList[k+m] = ''
 
                 # print 'Mean: '+str(np.mean(tempValueList))
@@ -360,7 +367,7 @@ def filterData(fileSource, fileDestination, tableFolder):
         worksheetOut.write(len(currentAxisData), len(currentAxisData)+4, np.std(sensorMeans))
 
         #calculate Values for current axis (mean of all 3 sensors)
-        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', fileDestination, 'ms', 'filtered_')
+        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'ms', 'filtered_')
 
         #Draw and save Histogram for current axis (mean of all 3 sensors)
         drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', fileDestination)

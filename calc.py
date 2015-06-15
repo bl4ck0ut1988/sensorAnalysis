@@ -49,7 +49,7 @@ for i in range(1, 4):
 mf.computeRawData(basedir+outputDirUnfiltered+tablesFolder, basedir+outputDirUnfiltered)
 
 #create filtered timestamp tables and figures using Prof. Allums algorihm
-mf.filterData(basedir+outputDirUnfiltered+tablesFolder, basedir+outputDirFiltered, tablesFolder)
+mf.filterData(basedir+outputDirUnfiltered+tablesFolder, basedir+outputDirFiltered, tablesFolder, 10, 2.5)
 
 #Process SwayStar data
 #Calculate values of interest for every axis and create figures
@@ -57,9 +57,10 @@ for i in range(len(listSway)):
     print '\n----------------------------------------\nComputing SwayStar data ...'
     extractedData = mf.extractDataSwayStar(basedir+'/'+listSway[i])
 
-    axisName = ['SwayStar_roll-axis', 'SwayStar_pitch-axis']
-    for j in range(1, 3):
-        mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], basedir+outputDirUnfiltered, 's',  'unfiltered_')
+    axisName = ['SwayStar_AV_roll', 'SwayStar_AV_pitch', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
+    yAxis = ['deg/s', 'deg/s', 'deg', 'deg']
+    for j in range(1, 5):
+        mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered, 's',  'unfiltered_')
 
         #Histogram
         mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered)
