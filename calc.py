@@ -8,8 +8,8 @@ from pylab import *
 import os
 
 directoryName = raw_input("Enter name of Directory: ")
-# basedir = "C:/users/kevin/desktop/"+directoryName+"/"
-basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
+basedir = "C:/users/kevin/desktop/"+directoryName+"/"
+# basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
 outputDirUnfiltered = 'results_unfiltered/'
 outputDirFiltered = 'results_filtered/'
 valedoFolderAngles = 'Valedo_angles/'
@@ -82,7 +82,7 @@ for i in range(len(listSway)):
         mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAv, 's',  'unfiltered_')
 
         if j == 2: #Plot data for pitch axis with corresponding data from valedo
-            mf.drawDoublePlot(axisName[j-1]+'_double', 's', yAxis[j-1], extractedData[0], meaned_threes_av_data[0], extractedData[j], meaned_threes_av_data[1], basedir+outputDirUnfiltered+swayFolderAv)
+            mf.drawDoublePlot(axisName[j-1]+'_with_filtered_valedo_data', 's', yAxis[j-1], extractedData[0], meaned_threes_av_data[0], extractedData[j], meaned_threes_av_data[1], basedir+outputDirUnfiltered+swayFolderAv)
 
         # Histogram
         mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAv)

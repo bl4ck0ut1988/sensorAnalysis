@@ -126,7 +126,7 @@ def extractDataValedo(fileLocation):
     ay = []
     az = []
 
-    xShift = 0.75
+    xShift = 0.95
     yShift = 0
 
     # read trough every line of .txt file and extract timestamp + x,y,z Angular Velocities
@@ -423,17 +423,18 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', fileDestination)
         # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
 
-
-        #TODO: Compute list of meanedThrees
+        #Apply three-filter onto already filtered data to smoothen it
         # New sample(t)= 0.25 * orig sample t-1 + 0.5 * orig sample t + 0.25 * orig sample t+1
         sensorMeansThrees = []
 
         for j in range(1, len(sensorMeans)-1):
             sensorMeansThrees.append(0.25*sensorMeans[j-1]+0.5*sensorMeans[j]+0.25*sensorMeans[j+1])
 
+        #Cut the first and last timeStamp out, because the corresponding value is not touched by the alogrithm
         del timeStampsMeans[0]
         del timeStampsMeans[-1]
 
+        #TODO: Save meaned_threes_data for every axis into a list and return it.
         if i == 2: # Save Values of z-axis
             meaned_threes_data.append(timeStampsMeans)
             meaned_threes_data.append(sensorMeansThrees)
