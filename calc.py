@@ -43,10 +43,8 @@ for i in range(len(listValedo)):
     extractedData = mf.extractDataValedo(basedir+'/'+listValedo[i])
     listExtractedValedoData.append(extractedData)
 
-mf.drawPlot('test_axis_', 's', 'deg/s', listExtractedValedoData[0][0], listExtractedValedoData[0][3], basedir)
-unfilteredZaxis = []
-unfilteredZaxis.append(listExtractedValedoData[0][0][:])
-unfilteredZaxis.append(listExtractedValedoData[0][3][:])
+#  mf.drawPlot('test_axis_', 's', 'deg/s', listExtractedValedoData[0][0], listExtractedValedoData[0][3], basedir)
+unfilteredValedoData = listExtractedValedoData[:]
 
 # create a time stamp table with AV values for each axis of the 3 valedo sensors
 for i in range(1, 4):
@@ -85,8 +83,8 @@ for i in range(len(listSway)):
     for j in range(1, 3):
         mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAv, 's',  'unfiltered_')
 
-        if j == 2: #Plot data for pitch axis with corresponding data from valedo
-            mf.drawMultiPlot(axisName[j-1]+'_with_valedo_data', 's', yAxis[j-1], extractedData[0], meaned_threes_av_data[0], unfilteredZaxis[0], extractedData[j], meaned_threes_av_data[1], unfilteredZaxis[1], basedir+outputDirUnfiltered+swayFolderAv)
+        #Plot data for pitch and roll axis with corresponding data from valedo (single unfiltered, 3 sensors filtered)
+        mf.drawMultiPlot(axisName[j-1]+'_with_valedo_data', 's', yAxis[j-1], extractedData[0], meaned_threes_av_data[j][0], unfilteredValedoData[0][0], extractedData[j], meaned_threes_av_data[j][1], unfilteredValedoData[0][j+1], basedir+outputDirUnfiltered+swayFolderAv)
 
         # Histogram
         mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAv)

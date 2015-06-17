@@ -71,14 +71,17 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, timeUni
         xValue = values[i] - fit_fn(timeStamps[i])
         sumSqr += math.pow(xValue, 2)
     rms = math.sqrt((sumSqr/len(values)))
+
+    #Copy list of values and sort it small --> big
     sortedValues = values[:]
     sortedValues.sort()
+
     # set and print the values below
     min = "Min: "+str(np.min(values))
     max = "Max: "+str(np.max(values))
     mean = "Mean: "+str(np.mean(values))
     ptp = "Ptp range: "+str(np.max(values)-np.min(values))
-    ptp90 = "90% ptp range: "+str((sortedValues[len(sortedValues)-(len(sortedValues)/20+1)])-(sortedValues[len(sortedValues)/20]))
+    ptp90 = "90% ptp range: "+str((sortedValues[(len(sortedValues)-1)-(len(sortedValues)/20)])-(sortedValues[len(sortedValues)/20]))
     sd = "Standard Deviation: "+str(np.std(values))
     rms = "Noise (rms): "+str(rms)
     # print values
@@ -441,10 +444,12 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         del timeStampsMeans[0]
         del timeStampsMeans[-1]
 
-        #TODO: Save meaned_threes_data for every axis into a list and return it.
-        if i == 2: # Save Values of z-axis
-            meaned_threes_data.append(timeStampsMeans)
-            meaned_threes_data.append(sensorMeansThrees)
+        # Save meaned_threes_data for every axis into a list and return it
+        # Add the currentAxisSet with the meaned_threes_data(timestamps, values) for each axis to "meaned_threes_data".
+        currentAxisSet = []
+        currentAxisSet.append(timeStampsMeans[:])
+        currentAxisSet.append(sensorMeansThrees[:])
+        meaned_threes_data.append(currentAxisSet)
 
         # calculate Values for current axis (mean of all 3 sensors)
         calculateValues(timeStampsMeans, sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 's', 'filtered_')
