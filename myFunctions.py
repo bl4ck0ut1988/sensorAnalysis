@@ -26,7 +26,7 @@ def drawPlot(axisName, timeUnit, yLabel, timeStamps, values, baseDirectory):
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
-def drawDoublePlot(axisName, timeUnit, yLabel, timeStamps, timeStamps2, values, values2, baseDirectory):
+def drawMultiPlot(axisName, timeUnit, yLabel, timeStamps, timeStamps2, timeStamps3, values, values2, values3, baseDirectory):
     # fit = polyfit(timeStamps, values, 1)
     # # plot data
     # x = np.array(range(int(np.min(timeStamps)), int(np.max(timeStamps))))
@@ -36,8 +36,10 @@ def drawDoublePlot(axisName, timeUnit, yLabel, timeStamps, timeStamps2, values, 
     plt.xlabel(timeUnit)
     plt.ylabel(yLabel)
     # plt.plot(x, y)
-    plt.plot(timeStamps, values)
-    plt.plot(timeStamps2, values2)
+    plt.plot(timeStamps, values, label='SwayStar')
+    plt.plot(timeStamps2, values2, label='Valedo 3 sensors filtered')
+    plt.plot(timeStamps3, values3, label='Valedo 1 sensor unfiltered')
+    plt.legend(loc=1,prop={'size':10})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
@@ -69,12 +71,14 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, timeUni
         xValue = values[i] - fit_fn(timeStamps[i])
         sumSqr += math.pow(xValue, 2)
     rms = math.sqrt((sumSqr/len(values)))
-
+    sortedValues = values[:]
+    sortedValues.sort()
     # set and print the values below
     min = "Min: "+str(np.min(values))
     max = "Max: "+str(np.max(values))
     mean = "Mean: "+str(np.mean(values))
     ptp = "Ptp range: "+str(np.max(values)-np.min(values))
+    ptp90 = "90% ptp range: "+str((sortedValues[len(sortedValues)-(len(sortedValues)/20+1)])-(sortedValues[len(sortedValues)/20]))
     sd = "Standard Deviation: "+str(np.std(values))
     rms = "Noise (rms): "+str(rms)
     # print values
@@ -87,6 +91,7 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, timeUni
     outputFile.write(max+'\n')
     outputFile.write(mean+'\n')
     outputFile.write(ptp+'\n')
+    outputFile.write(ptp90+'\n')
     # outputFile.write("Linear Reg. Function: "+str(fit_fn)+'\n')
     outputFile.write(sd+'\n')
     outputFile.write(rms+'\n\n')
@@ -126,7 +131,7 @@ def extractDataValedo(fileLocation):
     ay = []
     az = []
 
-    xShift = 0.95
+    xShift = 1.50
     yShift = 0
 
     # read trough every line of .txt file and extract timestamp + x,y,z Angular Velocities
@@ -138,6 +143,7 @@ def extractDataValedo(fileLocation):
             avy.append(float(splittedLine[15])+yShift)
             avz.append(float(splittedLine[16][:-2])+yShift)
 
+    #Create a unfiltered copy for each data set
     extractedData.append(timeStamp)
     extractedData.append(avx)
     extractedData.append(avy)
@@ -282,6 +288,7 @@ def computeRawData(fileSource, fileDestination):
                 sensorMeans.append(sensorMean)
 
                 # calculate Values for current axis (mean of all 3 sensors)
+
         calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', 'deg/s', fileDestination, 's', 'unfiltered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)

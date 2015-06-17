@@ -31,7 +31,6 @@ if not os.path.exists(basedir+outputDirUnfiltered):
 listValedo = []
 listSway = []
 listExtractedValedoData = []
-
 # Seperate files by file type
 for i in range(len(files)):
     if files[i].endswith('.txt'):
@@ -43,6 +42,11 @@ for i in range(len(files)):
 for i in range(len(listValedo)):
     extractedData = mf.extractDataValedo(basedir+'/'+listValedo[i])
     listExtractedValedoData.append(extractedData)
+
+mf.drawPlot('test_axis_', 's', 'deg/s', listExtractedValedoData[0][0], listExtractedValedoData[0][3], basedir)
+unfilteredZaxis = []
+unfilteredZaxis.append(listExtractedValedoData[0][0][:])
+unfilteredZaxis.append(listExtractedValedoData[0][3][:])
 
 # create a time stamp table with AV values for each axis of the 3 valedo sensors
 for i in range(1, 4):
@@ -59,7 +63,7 @@ mf.computeRawData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirU
 mf.computeRawData(basedir+outputDirUnfiltered+valedoFolderAngles, basedir+outputDirUnfiltered+valedoFolderAngles)
 
 # create filtered timestamp tables and figures using Prof. Allums algorihm
-meaned_threes_av_data = mf.filterData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirFiltered+valedoFolderAv, 10, 2.5)
+meaned_threes_av_data = mf.filterData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirFiltered+valedoFolderAv, 10, 1.75)
 #TODO: Adjust function "filterData" so it works for angles as well.
 
 
@@ -82,7 +86,7 @@ for i in range(len(listSway)):
         mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAv, 's',  'unfiltered_')
 
         if j == 2: #Plot data for pitch axis with corresponding data from valedo
-            mf.drawDoublePlot(axisName[j-1]+'_with_filtered_valedo_data', 's', yAxis[j-1], extractedData[0], meaned_threes_av_data[0], extractedData[j], meaned_threes_av_data[1], basedir+outputDirUnfiltered+swayFolderAv)
+            mf.drawMultiPlot(axisName[j-1]+'_with_valedo_data', 's', yAxis[j-1], extractedData[0], meaned_threes_av_data[0], unfilteredZaxis[0], extractedData[j], meaned_threes_av_data[1], unfilteredZaxis[1], basedir+outputDirUnfiltered+swayFolderAv)
 
         # Histogram
         mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAv)
