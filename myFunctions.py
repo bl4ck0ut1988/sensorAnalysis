@@ -38,7 +38,7 @@ def drawMultiPlot(axisName, timeUnit, yLabel, timeStamps, timeStamps2, timeStamp
     # plt.plot(x, y)
     plt.plot(timeStamps, values, label='SwayStar')
     plt.plot(timeStamps2, values2, label='Valedo 3 sensors filtered')
-    plt.plot(timeStamps3, values3, label='Valedo 1 sensor unfiltered')
+    # plt.plot(timeStamps3, values3, label='Valedo 1 sensor unfiltered')
     plt.legend(loc=1,prop={'size':10})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
