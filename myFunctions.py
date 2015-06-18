@@ -12,38 +12,38 @@ def graph(formula, x_range):
     plt.plot(x, y)
     plt.show()
 
-def drawPlot(axisName, timeUnit, yLabel, timeStamps, values, baseDirectory):
+def drawPlot(axisName, yLabel, timeStamps, values, baseDirectory):
     # fit = polyfit(timeStamps, values, 1)
     # # plot data
     # x = np.array(range(int(np.min(timeStamps)), int(np.max(timeStamps))))
     # y = eval(str(fit[0])+"*x+"+str(fit[1]))
     # plt.axis([int(np.min(timeStamps)), int(np.max(timeStamps)), int(np.min(values)), int(np.max(values))])
     plt.title(axisName)
-    plt.xlabel(timeUnit)
+    plt.xlabel('sec')
     plt.ylabel(yLabel)
     # plt.plot(x, y)
     plt.plot(timeStamps, values)
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
-def drawMultiPlot(axisName, timeUnit, yLabel, timeStamps, timeStamps2, timeStamps3, values, values2, values3, baseDirectory):
+def drawMultiPlot(axisName, yLabel, timeStamps, timeStamps2, timeStamps3, values, values2, values3, baseDirectory):
     # fit = polyfit(timeStamps, values, 1)
     # # plot data
     # x = np.array(range(int(np.min(timeStamps)), int(np.max(timeStamps))))
     # y = eval(str(fit[0])+"*x+"+str(fit[1]))
     # plt.axis([int(np.min(timeStamps)), int(np.max(timeStamps)), int(np.min(values)), int(np.max(values))])
     plt.title(axisName)
-    plt.xlabel(timeUnit)
+    plt.xlabel('sec')
     plt.ylabel(yLabel)
     # plt.plot(x, y)
     plt.plot(timeStamps, values, label='SwayStar')
     plt.plot(timeStamps2, values2, label='Valedo 3 sensors filtered')
-    # plt.plot(timeStamps3, values3, label='Valedo 1 sensor unfiltered')
+    plt.plot(timeStamps3, values3, label='Valedo 1 sensor unfiltered')
     plt.legend(loc=1,prop={'size':10})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
-def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, timeUnit, filterStatus):
+def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, filterStatus):
 
     fit = polyfit(timeStamps, values, 1)
     # # plot data
@@ -59,7 +59,7 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, timeUni
     # plt.clf()
     # # plt.show()
 
-    drawPlot(axisName, timeUnit, yLabel, timeStamps, values, baseDirectory)
+    drawPlot(axisName, yLabel, timeStamps, values, baseDirectory)
 
     fit_fn = poly1d(fit) # fit_fn is now a function which takes in x and returns an estimate for y
     # calculate sd
@@ -123,7 +123,7 @@ def drawHistoXrange(listOfValues, axisName, saveDirectory, x_min, x_max):
 # Extracts timestamps and corresponding angular velocities (x,y,z)
 # Returns a list, containing 4 more sub lists with timestamps and angular Velocities (x,y,z)
 # Lists can be accessed by index: [0]: timestamps, [1] AV x-axis, [2] AV y-axis, [3] AV z-axis,
-def extractDataValedo(fileLocation):
+def extractDataValedo(fileLocation, timeShift, valueShift):
     sensorData = open(fileLocation)
     extractedData = []
     timeStamp = []
@@ -134,17 +134,14 @@ def extractDataValedo(fileLocation):
     ay = []
     az = []
 
-    xShift = 1.50
-    yShift = 0
-
     # read trough every line of .txt file and extract timestamp + x,y,z Angular Velocities
     for line in sensorData.readlines():
         if not line.startswith("Sensor"):
             splittedLine = line.split(",")
-            timeStamp.append(float(splittedLine[1])/1000-xShift)
-            avx.append(float(splittedLine[14])+yShift)
-            avy.append(float(splittedLine[15])+yShift)
-            avz.append(float(splittedLine[16][:-2])+yShift)
+            timeStamp.append(float(splittedLine[1])/1000+timeShift)
+            avx.append(float(splittedLine[14])+valueShift)
+            avy.append(float(splittedLine[15])+valueShift)
+            avz.append(float(splittedLine[16][:-2])+valueShift)
 
     #Create a unfiltered copy for each data set
     extractedData.append(timeStamp)
@@ -160,9 +157,9 @@ def extractDataValedo(fileLocation):
     for i in range(1, 4):
         for j in range(len(extractedData[i])):
             if j == 0:
-                extractedData[i+3].append(0.0+extractedData[i][j-1]*((extractedData[i-1][j]-extractedData[i-1][j-1])))
+                extractedData[i+3].append(0.0+extractedData[i][j]*extractedData[i-1][j])
             else:
-                extractedData[i+3].append(extractedData[i+3][j-1]+extractedData[i][j-1]*((extractedData[i-1][j]-extractedData[i-1][j-1])))
+                extractedData[i+3].append(extractedData[i+3][j-1]+extractedData[i][j-1]*(extractedData[i-1][j]-extractedData[i-1][j-1]))
 
     return extractedData
 
@@ -240,7 +237,7 @@ def buildTimestampTable(listOfExtractedDataValedo, axis, destinationDirectory, v
     print axes[axis]+'-axis_'+valType+'.xlsx was created successfully!\n'
 
 
-def computeRawData(fileSource, fileDestination):
+def computeRawData(fileSource, fileDestination, unit):
     print 'Computing unfiltered data for all axes ...'
     files = os.listdir(fileSource)
     axisDataFiles = []
@@ -290,9 +287,9 @@ def computeRawData(fileSource, fileDestination):
                 timeStampsMeans.append(currentAxisData[0][j]) #Add current timestamp for meaned values to list
                 sensorMeans.append(sensorMean)
 
-                # calculate Values for current axis (mean of all 3 sensors)
+        # calculate Values for current axis (mean of all 3 sensors)
 
-        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', 'deg/s', fileDestination, 's', 'unfiltered_')
+        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', unit, fileDestination, 'unfiltered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)
         drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination)
@@ -427,7 +424,7 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         worksheetOut.write(len(currentAxisData), len(currentAxisData)+4, np.std(sensorMeans))
 
         # calculate Values for current axis (mean of all 3 sensors)
-        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 's', 'filtered_')
+        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'filtered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)
         drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', fileDestination)
@@ -452,7 +449,7 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         meaned_threes_data.append(currentAxisSet)
 
         # calculate Values for current axis (mean of all 3 sensors)
-        calculateValues(timeStampsMeans, sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 's', 'filtered_')
+        calculateValues(timeStampsMeans, sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'filtered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)
         drawHisto(sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', fileDestination)
@@ -463,3 +460,13 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
     print 'done!'
 
     return meaned_threes_data
+
+
+def shiftY(upShiftList, downShiftList, shift):
+
+    for i in range(len(upShiftList)):
+        upShiftList[i] += shift
+
+    for i in range(len(downShiftList)):
+        downShiftList[i] -= shift
+
