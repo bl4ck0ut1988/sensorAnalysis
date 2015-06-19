@@ -8,8 +8,9 @@ from pylab import *
 import os
 
 directoryName = raw_input("Enter name of Directory: ")
-# basedir = "C:/users/kevin/desktop/"+directoryName+"/"
-basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
+basedir = "C:/users/kevin/desktop/"+directoryName+"/"
+# basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
+outputDirMultiPlots = 'multi_plots/'
 outputDirUnfiltered = 'results_unfiltered/'
 outputDirFiltered = 'results_filtered/'
 valedoFolderAngles = 'Valedo_angles/'
@@ -18,12 +19,15 @@ swayFolderAngles = 'SwayStar_angles/'
 swayFolderAv = 'SwayStar_av/'
 files = os.listdir(basedir)
 
-# Check if results folders already exists
+# Check if results folders already exists. If no, create them.
 if not os.path.exists(basedir+outputDirFiltered):
     os.makedirs(basedir+outputDirFiltered)
 
 if not os.path.exists(basedir+outputDirUnfiltered):
     os.makedirs(basedir+outputDirUnfiltered)
+
+if not os.path.exists(basedir+outputDirMultiPlots):
+    os.makedirs(basedir+outputDirMultiPlots)
 
 # create output data file
 # open(basedir+outputDirUnfiltered+'output_data.txt', 'w')
@@ -54,21 +58,29 @@ for i in range(1, 4):
     mf.buildTimestampTable(listExtractedValedoData, i, basedir+outputDirUnfiltered+valedoFolderAv, 'av')
 
 # create a time stamp table with angle values for each axis of the 3 valedo sensors
-for i in range(4, 7):
-    mf.buildTimestampTable(listExtractedValedoData, i, basedir+outputDirUnfiltered+valedoFolderAngles, 'angles')
+# for i in range(4, 7):
+#     mf.buildTimestampTable(listExtractedValedoData, i, basedir+outputDirUnfiltered+valedoFolderAngles, 'angles')
 
 # Compute raw data (angular velocity) and generate figures
 mf.computeRawData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirUnfiltered+valedoFolderAv, 'deg/s')
 
 # Compute raw data (angles) and generate figures
-mf.computeRawData(basedir+outputDirUnfiltered+valedoFolderAngles, basedir+outputDirUnfiltered+valedoFolderAngles, 'deg')
+# mf.computeRawData(basedir+outputDirUnfiltered+valedoFolderAngles, basedir+outputDirUnfiltered+valedoFolderAngles, 'deg')
 
 # create filtered timestamp tables and figures using Prof. Allums algorihm
 sdFactor = 1.75
 sampleRange = 10
 meaned_threes_av_data = mf.filterData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirFiltered+valedoFolderAv, sampleRange, sdFactor)
-#TODO: Adjust function "filterData" so it works for angles as well.
 
+
+#Create copy of the filtered data of valedo yaw(x)-axis and shift it (+10% of range)
+unshiftedYawValedo = meaned_threes_av_data[0][:]
+yawShift = (np.max(unshiftedYawValedo[1])-np.min(unshiftedYawValedo[1]))*0.1
+for i in range(len(unshiftedYawValedo[1])):
+    unshiftedYawValedo[1][i] += yawShift
+
+#create plot for yaw axis (unfiltered sensor 1 vs meaned_threes)
+mf.drawTwinPlot('Valedo_AV_yaw(x)_axis_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
 
 # Process SwayStar data
 # Check if results folder already exists
@@ -91,19 +103,23 @@ for i in range(len(listSway)):
     yAxis = ['deg/sec', 'deg/sec', 'deg', 'deg']
     singleTrigger = 0 # This trigger makes sure, that the time stamps for the cut only get subtracted once (for the single sensor data only)
     cutCountSingle = 0
-    cutCountSingleRear = int(np.max(unfilteredValedoData[0][0])-np.max(extractedData[0]))
+    cutCountSingleRear = 0
 
     for j in range(1, 3):
-        mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAv, 'unfiltered_')
+        valuesOfInterest = mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAv, 'unfiltered_')
 
         #Evaluate cutting lines for meaned valedos and single sensor
         cutCountMeans = 0
-        cutCountMeansRear = int(np.max(meaned_threes_av_data[j][0])-np.max(extractedData[0]))
+        cutCountMeansRear = 0
 
         for k in range(len(meaned_threes_av_data[j][0])):
             if meaned_threes_av_data[j][0][k] >= 0:
                 break
             cutCountMeans += 1
+
+        for k in range(len(meaned_threes_av_data[j][0])):
+            if meaned_threes_av_data[j][0][k] >= np.max(extractedData[0]):
+                cutCountMeansRear += 1
 
         if not singleTrigger == 1:
             for k in range(len(unfilteredValedoData[0][0])):
@@ -111,7 +127,10 @@ for i in range(len(listSway)):
                     break
                 cutCountSingle += 1
 
-        print 'counter single: '+str(cutCountSingle)
+        if not singleTrigger == 1:
+            for k in range(len(unfilteredValedoData[0][0])):
+                if unfilteredValedoData[0][0][k] >= np.max(extractedData[0]):
+                    cutCountSingleRear += 1
 
         #Cut out the overlapping valedo values from
         # meaned:
@@ -140,38 +159,22 @@ for i in range(len(listSway)):
         mf.shiftY(meaned_threes_av_data[j][1], unfilteredValedoData[0][j+1], (np.max(extractedData[j])-np.min(extractedData[j]))*valedoShiftY/100)
 
         #Plot data for pitch and roll axis with corresponding data from valedo (single unfiltered, 3 sensors filtered)
-        mf.drawMultiPlot(axisName[j-1]+'_with_valedo_data', yAxis[j-1], extractedData[0], meaned_threes_av_data[j][0], unfilteredValedoData[0][0], extractedData[j], meaned_threes_av_data[j][1], unfilteredValedoData[0][j+1], basedir+outputDirUnfiltered+swayFolderAv)
+        mf.drawMultiPlot(axisName[j-1]+'_with_valedo_data', yAxis[j-1], unfilteredValedoData[0][0],  meaned_threes_av_data[j][0], extractedData[0], unfilteredValedoData[0][j+1],  meaned_threes_av_data[j][1], extractedData[j], basedir+outputDirMultiPlots)
 
         # Histogram
-        mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAv)
-        # mf.drawHistoXrange(extractedData[j], 'SwayStar_'+axisName[j-1], basedir+'results/', -0.1, 0.1)
+        mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAv, valuesOfInterest)
+        # mf.drawHistoXrange(extractedData[j], 'SwayStar_'+axisName[j-1], basedir+'results/', -0.1, 0.1, valuesOfInterest)
     for j in range(3, 5):
-        mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAngles, 'unfiltered_')
+        valuesOfInterest = mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAngles, 'unfiltered_')
 
         # Histogram
-        mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAngles)
-        # mf.drawHistoXrange(extractedData[j], 'SwayStar_'+axisName[j-1], basedir+'results/', -0.1, 0.1)
+        mf.drawHisto(extractedData[j], axisName[j-1], basedir+outputDirUnfiltered+swayFolderAngles, valuesOfInterest)
+        # mf.drawHistoXrange(extractedData[j], 'SwayStar_'+axisName[j-1], basedir+'results/', -0.1, 0.1, valuesOfInterest)
 
 #write valedo time shift into output file:
-outputFile = open(basedir+outputDirUnfiltered+swayFolderAv+'shift_valedo.txt', 'w')
+outputFile = open(basedir+'shift_valedo.txt', 'w')
 outputFile.write('Time shift valedo: '+str(timeShift)+' sec\n')
 outputFile.write('y-shift of valedo data (single(-) and meaned_threes(+)): '+str(valedoShiftY)+' %\n')
 outputFile.close()
 
 print 'done!'
-
-# #Process Valedo data
-# #Calculate values of interest for every axis and create figures
-# for i in range(len(listValedo)):
-#     print '\n----------------------------------------\nData from: Valedo '+listValedo[i][-11:-4]
-#
-#     axisName = ['valedo_x-axis', 'valedo_y-axis', 'valedo_z-axis']
-#
-#     for j in range(1, 4):
-#         print '\n'+axisName[j-1]+':'
-#         mf.calculateValues(extractedData[0], extractedData[j], listValedo[i][-11:-4]+'_'+axisName[j-1], basedir+outputDirUnfiltered, 'unfiltered_')
-#
-#         #Histogram
-#         mf.drawHisto(extractedData[j], listValedo[i][-11:-4]+'_'+axisName[j-1], basedir+outputDirUnfiltered)
-#
-#

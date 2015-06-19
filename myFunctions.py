@@ -21,12 +21,13 @@ def drawPlot(axisName, yLabel, timeStamps, values, baseDirectory):
     plt.title(axisName)
     plt.xlabel('sec')
     plt.ylabel(yLabel)
+    # plt.xlim([0,100])
     # plt.plot(x, y)
     plt.plot(timeStamps, values)
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
-def drawMultiPlot(axisName, yLabel, timeStamps, timeStamps2, timeStamps3, values, values2, values3, baseDirectory):
+def drawTwinPlot(axisName, yLabel, timeStampsValedoSingle, timeStampsValedoFiltered, valuesValedoSingle, valuesValedoFiltered, baseDirectory):
     # fit = polyfit(timeStamps, values, 1)
     # # plot data
     # x = np.array(range(int(np.min(timeStamps)), int(np.max(timeStamps))))
@@ -35,35 +36,40 @@ def drawMultiPlot(axisName, yLabel, timeStamps, timeStamps2, timeStamps3, values
     plt.title(axisName)
     plt.xlabel('sec')
     plt.ylabel(yLabel)
+    #plt.xlim([0,100])
     # plt.plot(x, y)
-    plt.plot(timeStamps, values, label='SwayStar')
-    plt.plot(timeStamps2, values2, label='Valedo 3 sensors filtered')
-    plt.plot(timeStamps3, values3, label='Valedo 1 sensor unfiltered')
-    plt.legend(loc=1,prop={'size':10})
+    plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered')
+    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered') #(shift +10%)')
+    plt.legend(loc=1,prop={'size':7.5})
+    plt.savefig(baseDirectory+axisName+'.png')
+    plt.clf()
+
+def drawMultiPlot(axisName, yLabel, timeStampsValedoSingle, timeStampsValedoFiltered, timeStampsSway, valuesValedoSingle, valuesValedoFiltered, valuesSway, baseDirectory):
+    # fit = polyfit(timeStamps, values, 1)
+    # # plot data
+    # x = np.array(range(int(np.min(timeStamps)), int(np.max(timeStamps))))
+    # y = eval(str(fit[0])+"*x+"+str(fit[1]))
+    # plt.axis([int(np.min(timeStamps)), int(np.max(timeStamps)), int(np.min(values)), int(np.max(values))])
+    plt.title(axisName)
+    plt.xlabel('sec')
+    plt.ylabel(yLabel)
+    # plt.xlim([0,100])
+    # plt.plot(x, y)
+    plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered') #(shift -10%)')
+    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered') #(shift +10%)')
+    plt.plot(timeStampsSway, valuesSway, label='SwayStar')
+    plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
 def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, filterStatus):
 
     fit = polyfit(timeStamps, values, 1)
-    # # plot data
-    # x = np.array(range(int(np.min(timeStamps)), int(np.max(timeStamps))))
-    # y = eval(str(fit[0])+"*x+"+str(fit[1]))
-    # # plt.axis([int(np.min(timeStamps)), int(np.max(timeStamps)), int(np.min(values)), int(np.max(values))])
-    # plt.title(axisName)
-    # plt.xlabel(timeUnit)
-    # plt.ylabel(yLabel)
-    # # plt.plot(x, y)
-    # plt.plot(timeStamps, values)
-    # plt.savefig(baseDirectory+axisName+'.png')
-    # plt.clf()
-    # # plt.show()
 
+    #Draw plots with input data
     drawPlot(axisName, yLabel, timeStamps, values, baseDirectory)
 
     fit_fn = poly1d(fit) # fit_fn is now a function which takes in x and returns an estimate for y
-    # calculate sd
-
 
     # Calculate rms
     sumSqr = 0
@@ -77,15 +83,13 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, filterS
     sortedValues.sort()
 
     # set and print the values below
-    min = "Min: "+str(np.min(values))
-    max = "Max: "+str(np.max(values))
-    mean = "Mean: "+str(np.mean(values))
-    ptp = "Ptp range: "+str(np.max(values)-np.min(values))
-    ptp90 = "90% ptp range: "+str((sortedValues[(len(sortedValues)-1)-(len(sortedValues)/20)])-(sortedValues[len(sortedValues)/20]))
-    sd = "Standard Deviation: "+str(np.std(values))
-    rms = "Noise (rms): "+str(rms)
-    # print values
-    # print min+'\n', max+'\n', mean+'\n', ptp+'\n', rms+'\n'
+    min = "min: "+str(np.round(np.min(values), 3))
+    max = "max: "+str(np.round(np.max(values), 3))
+    mean = "mean: "+str(np.round(np.mean(values), 3))
+    ptp = "ptp: "+str(np.round((np.max(values)-np.min(values)), 3))
+    ptp90 = "ptp90%: "+str(np.round(((sortedValues[(len(sortedValues)-1)-(len(sortedValues)/20)])-(sortedValues[len(sortedValues)/20])), 3))
+    sd = "standard deviation: "+str(np.round(np.std(values), 3))
+    rms = "noise (rms): "+str(np.round(rms, 3))
 
     # open and write into output file:
     outputFile = open(baseDirectory+filterStatus+'output_data.txt', 'a')
@@ -100,22 +104,31 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, filterS
     outputFile.write(rms+'\n\n')
     outputFile.close()
 
+    #Save values of interest into a list and return it for further use
+    valuesOfInterest = []
+    valuesOfInterest.append(mean)
+    valuesOfInterest.append(sd)
+    valuesOfInterest.append(ptp90)
+    return valuesOfInterest
+
 
 # Creates histogram with 40 bins (automatically sets range)
-def drawHisto(listOfValues, axisName, saveDirectory):
+def drawHisto(listOfValues, axisName, saveDirectory, valuesOfInterest):
 
     plt.title(axisName)
-    plt.hist(listOfValues, bins=40)
+    plt.hist(listOfValues, bins=40, label=str(valuesOfInterest[0]+'\n'+valuesOfInterest[1]+'\n'+valuesOfInterest[2]))
+    plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(saveDirectory+axisName+'_histo.png')
     plt.clf()
 
 
 # Creates a histogram with 40 bins using the ptp range of the data
-def drawHistoXrange(listOfValues, axisName, saveDirectory, x_min, x_max):
+def drawHistoXrange(listOfValues, axisName, saveDirectory, x_min, x_max, valuesOfInterest):
 
     plt.title(axisName)
     plt.xlim(x_min, x_max)
-    plt.hist(listOfValues, bins=40)
+    plt.hist(listOfValues, bins=40, label=str(valuesOfInterest[0]+'\n'+valuesOfInterest[1]+'\n'+valuesOfInterest[2]))
+    plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(saveDirectory+axisName+'_histo.png')
     plt.clf()
 
@@ -289,11 +302,11 @@ def computeRawData(fileSource, fileDestination, unit):
 
         # calculate Values for current axis (mean of all 3 sensors)
 
-        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', unit, fileDestination, 'unfiltered_')
+        valuesOfInterest = calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', unit, fileDestination, 'unfiltered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)
-        drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination)
-        # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
+        drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_unfiltered', fileDestination, valuesOfInterest)
+        # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1, valuesOfInterest)
 
 
 def filterData(fileSource, fileDestination, sampleRange, sdFactor):
@@ -339,12 +352,9 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
 
             for k in range(0, len(currentAxisData[j])-5, 5): # take current 10 values for the algorithm and afterwards move forward 5 "steps". Note that the untouched values are cut out of the analysis
                 tempValueList = []
-                # print str(k)+' - '+str(k+10)+': '
                 for m in range(sampleRange):
                     if not currentAxisData[j][k+m] == '': # Extract the current Values (without gaps). --> used for calculation of mean/sd
                         tempValueList.append(currentAxisData[j][k+m])
-
-                # print tempValueList
 
                 tempMean = np.mean(tempValueList)
                 tempSd = np.std(tempValueList)
@@ -354,10 +364,6 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
                     if not tempFilteredList[k+m] == '': # before comparing to mean and sd, make sure it is a float
                         if tempFilteredList[k+m] > (tempMean+sdFactor*tempSd) or tempFilteredList[k+m] < (tempMean-sdFactor*tempSd):
                             tempFilteredList[k+m] = ''
-
-                # print 'Mean: '+str(np.mean(tempValueList))
-                # print 'sd: '+str(np.std(tempValueList))
-                # print 'End:'+str(k+10)+'--------------------------'
 
             currentAxisData[j] = tempFilteredList #set the corrected (filtered list) with added gaps
 
@@ -424,11 +430,11 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         worksheetOut.write(len(currentAxisData), len(currentAxisData)+4, np.std(sensorMeans))
 
         # calculate Values for current axis (mean of all 3 sensors)
-        calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'filtered_')
+        valuesOfInterest = calculateValues(timeStampsMeans, sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'filtered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)
-        drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', fileDestination)
-        # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
+        drawHisto(sensorMeans, 'mean_'+axisDataFiles[i][:-5]+'_filtered', fileDestination, valuesOfInterest)
+        # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1, valuesOfInterest)
 
         #Apply three-filter onto already filtered data to smoothen it
         # New sample(t)= 0.25 * orig sample t-1 + 0.5 * orig sample t + 0.25 * orig sample t+1
@@ -449,11 +455,11 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         meaned_threes_data.append(currentAxisSet)
 
         # calculate Values for current axis (mean of all 3 sensors)
-        calculateValues(timeStampsMeans, sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'filtered_')
+        valuesOfInterest = calculateValues(timeStampsMeans, sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', 'deg/s', fileDestination, 'filtered_')
 
         # Draw and save Histogram for current axis (mean of all 3 sensors)
-        drawHisto(sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', fileDestination)
-        # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1)
+        drawHisto(sensorMeansThrees, 'mean_threes_'+axisDataFiles[i][:-5]+'_filtered', fileDestination, valuesOfInterest)
+        # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1, valuesOfInterest)
 
         workbook.close()
 
@@ -462,6 +468,7 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
     return meaned_threes_data
 
 
+#Function used for shifting the valedo datasets (single unfiltered and meaned filtered) for final figures.
 def shiftY(upShiftList, downShiftList, shift):
 
     for i in range(len(upShiftList)):
