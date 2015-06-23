@@ -39,7 +39,7 @@ def drawTwinPlot(axisName, yLabel, timeStampsValedoSingle, timeStampsValedoFilte
     #plt.xlim([0,100])
     # plt.plot(x, y)
     plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered')
-    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered') #(shift +10%)')
+    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered(shift +10%)')
     plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
@@ -55,13 +55,14 @@ def drawMultiPlot(axisName, yLabel, timeStampsValedoSingle, timeStampsValedoFilt
     plt.ylabel(yLabel)
     # plt.xlim([0,100])
     # plt.plot(x, y)
-    plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered') #(shift -10%)')
-    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered') #(shift +10%)')
+    plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered(shift -10%)')
+    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered(shift +10%)')
     plt.plot(timeStampsSway, valuesSway, label='SwayStar')
     plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
 
+# Calculation of values of interest
 def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, filterStatus):
 
     fit = polyfit(timeStamps, values, 1)
@@ -83,13 +84,14 @@ def calculateValues(timeStamps, values, axisName, yLabel, baseDirectory, filterS
     sortedValues.sort()
 
     # set and print the values below
-    min = "min: "+str(np.round(np.min(values), 3))
-    max = "max: "+str(np.round(np.max(values), 3))
-    mean = "mean: "+str(np.round(np.mean(values), 3))
-    ptp = "ptp: "+str(np.round((np.max(values)-np.min(values)), 3))
-    ptp90 = "ptp90%: "+str(np.round(((sortedValues[(len(sortedValues)-1)-(len(sortedValues)/20)])-(sortedValues[len(sortedValues)/20])), 3))
-    sd = "standard deviation: "+str(np.round(np.std(values), 3))
-    rms = "noise (rms): "+str(np.round(rms, 3))
+    roundDigits = 4
+    min = "min: "+str(np.round(np.min(values), roundDigits))
+    max = "max: "+str(np.round(np.max(values), roundDigits))
+    mean = "mean: "+str(np.round(np.mean(values), roundDigits))
+    ptp = "ptp: "+str(np.round((np.max(values)-np.min(values)), roundDigits))
+    ptp90 = "ptp90%: "+str(np.round(((sortedValues[(len(sortedValues)-1)-(len(sortedValues)/20)])-(sortedValues[len(sortedValues)/20])), roundDigits))
+    sd = "standard deviation: "+str(np.round(np.std(values), roundDigits))
+    rms = "noise (rms): "+str(np.round(rms, roundDigits))
 
     # open and write into output file:
     outputFile = open(baseDirectory+filterStatus+'output_data.txt', 'a')
@@ -136,7 +138,7 @@ def drawHistoXrange(listOfValues, axisName, saveDirectory, x_min, x_max, valuesO
 # Extracts timestamps and corresponding angular velocities (x,y,z)
 # Returns a list, containing 4 more sub lists with timestamps and angular Velocities (x,y,z)
 # Lists can be accessed by index: [0]: timestamps, [1] AV x-axis, [2] AV y-axis, [3] AV z-axis,
-def extractDataValedo(fileLocation, timeShift, valueShift):
+def extractDataValedo(fileLocation, timeShift):
     sensorData = open(fileLocation)
     extractedData = []
     timeStamp = []
@@ -152,9 +154,9 @@ def extractDataValedo(fileLocation, timeShift, valueShift):
         if not line.startswith("Sensor"):
             splittedLine = line.split(",")
             timeStamp.append(float(splittedLine[1])/1000+timeShift)
-            avx.append(float(splittedLine[14])+valueShift)
-            avy.append(float(splittedLine[15])+valueShift)
-            avz.append(float(splittedLine[16][:-2])+valueShift)
+            avx.append(float(splittedLine[14]))
+            avy.append(float(splittedLine[15]))
+            avz.append(float(splittedLine[16][:-2]))
 
     #Create a unfiltered copy for each data set
     extractedData.append(timeStamp)

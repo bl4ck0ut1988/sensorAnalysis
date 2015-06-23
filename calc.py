@@ -37,20 +37,21 @@ listSway = []
 listExtractedValedoData = []
 # Seperate files by file type
 for i in range(len(files)):
-    if files[i].endswith('.txt'):
+    if files[i].endswith('.txt') and not files[i].startswith('shift'):
         listValedo.append(files[i])
     elif files[i].endswith('.xlsx'):
         listSway.append(files[i])
 
-# create a list with the data from all 3 valedo sensors
-timeShift = -0.75
+# Set shift for valedo data
+timeShift = -1.75
 valueShift = 0.0
 
+# create a list with the data from all 3 valedo sensors
 for i in range(len(listValedo)):
-    extractedData = mf.extractDataValedo(basedir+'/'+listValedo[i], timeShift, valueShift)
+    extractedData = mf.extractDataValedo(basedir+'/'+listValedo[i], timeShift)
     listExtractedValedoData.append(extractedData)
 
-#  mf.drawPlot('test_axis_', 'deg/s', listExtractedValedoData[0][0], listExtractedValedoData[0][3], basedir)
+#Create a copy of the extracted Valedo data for further modifications (shifted plots)
 unfilteredValedoData = listExtractedValedoData[:]
 
 # create a time stamp table with AV values for each axis of the 3 valedo sensors
@@ -80,7 +81,7 @@ for i in range(len(unshiftedYawValedo[1])):
     unshiftedYawValedo[1][i] += yawShift
 
 #create plot for yaw axis (unfiltered sensor 1 vs meaned_threes)
-mf.drawTwinPlot('Valedo_AV_yaw(x)_axis_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
+mf.drawTwinPlot('Valedo_ang.vel._yaw(x)_axis_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
 
 # Process SwayStar data
 # Check if results folder already exists
@@ -99,16 +100,17 @@ for i in range(len(listSway)):
     print '\n----------------------------------------\nComputing SwayStar data ...'
     extractedData = mf.extractDataSwayStar(basedir+'/'+listSway[i])
 
-    axisName = ['SwayStar_AV_roll', 'SwayStar_AV_pitch', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
+    axisName = ['SwayStar_ang.vel._roll', 'SwayStar_ang.vel._pitch', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
     yAxis = ['deg/sec', 'deg/sec', 'deg', 'deg']
     singleTrigger = 0 # This trigger makes sure, that the time stamps for the cut only get subtracted once (for the single sensor data only)
     cutCountSingle = 0
     cutCountSingleRear = 0
 
     for j in range(1, 3):
+        #Calculate Values of interest for meaned data and create plots before modifying the data for shifted plots
         valuesOfInterest = mf.calculateValues(extractedData[0], extractedData[j], axisName[j-1], yAxis[j-1], basedir+outputDirUnfiltered+swayFolderAv, 'unfiltered_')
 
-        #Evaluate cutting lines for meaned valedos and single sensor
+        #Evaluate cutting lines for meaned valedos and single sensor valedo
         cutCountMeans = 0
         cutCountMeansRear = 0
 
