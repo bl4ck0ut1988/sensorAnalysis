@@ -8,8 +8,8 @@ from pylab import *
 import os
 
 directoryName = raw_input("Enter name of Directory: ")
-basedir = "C:/users/kevin/desktop/"+directoryName+"/"
-# basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
+# basedir = "C:/users/kevin/desktop/"+directoryName+"/"
+basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
 outputDirMultiPlots = 'multi_plots/'
 outputDirUnfiltered = 'results_unfiltered/'
 outputDirFiltered = 'results_filtered/'
@@ -81,7 +81,7 @@ for i in range(len(unshiftedYawValedo[1])):
     unshiftedYawValedo[1][i] += yawShift
 
 #create plot for yaw axis (unfiltered sensor 1 vs meaned_threes)
-mf.drawTwinPlot('Valedo_ang.vel._yaw(x)_axis_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
+mf.drawTwinPlot('Valedo_ang.vel._transversal_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
 
 # Process SwayStar data
 # Check if results folder already exists
@@ -100,7 +100,7 @@ for i in range(len(listSway)):
     print '\n----------------------------------------\nComputing SwayStar data ...'
     extractedData = mf.extractDataSwayStar(basedir+'/'+listSway[i])
 
-    axisName = ['SwayStar_ang.vel._roll', 'SwayStar_ang.vel._pitch', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
+    axisName = ['SwayStar_ang.vel._lateral(roll)', 'SwayStar_ang.vel._sagittal(pitch)', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
     yAxis = ['deg/sec', 'deg/sec', 'deg', 'deg']
     singleTrigger = 0 # This trigger makes sure, that the time stamps for the cut only get subtracted once (for the single sensor data only)
     cutCountSingle = 0
