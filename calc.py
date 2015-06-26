@@ -8,15 +8,15 @@ from pylab import *
 import os
 
 directoryName = raw_input("Enter name of Directory: ")
-# basedir = "C:/users/kevin/desktop/"+directoryName+"/"
-basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
+basedir = "C:/users/kevin/desktop/"+directoryName+"/"
+#  basedir = "C:/users/bl4ck0ut88/desktop/"+directoryName+"/"
 outputDirMultiPlots = 'multi_plots/'
 outputDirUnfiltered = 'results_unfiltered/'
 outputDirFiltered = 'results_filtered/'
 valedoFolderAngles = 'Valedo_angles/'
-valedoFolderAv = 'Valedo_av/'
+valedoFolderAv = 'Valedo_angVel/'
 swayFolderAngles = 'SwayStar_angles/'
-swayFolderAv = 'SwayStar_av/'
+swayFolderAv = 'SwayStar_angVel/'
 files = os.listdir(basedir)
 
 # Check if results folders already exists. If no, create them.
@@ -43,20 +43,19 @@ for i in range(len(files)):
         listSway.append(files[i])
 
 # Set shift for valedo data
-timeShift = -1.75
-valueShift = 0.0
+valedoTimeShift = -1.2
 
 # create a list with the data from all 3 valedo sensors
 for i in range(len(listValedo)):
-    extractedData = mf.extractDataValedo(basedir+'/'+listValedo[i], timeShift)
+    extractedData = mf.extractDataValedo(basedir+'/'+listValedo[i])
     listExtractedValedoData.append(extractedData)
 
 #Create a copy of the extracted Valedo data for further modifications (shifted plots)
 unfilteredValedoData = listExtractedValedoData[:]
 
-# create a time stamp table with AV values for each axis of the 3 valedo sensors
+# create a time stamp table with angular velocities values for each axis of the 3 valedo sensors
 for i in range(1, 4):
-    mf.buildTimestampTable(listExtractedValedoData, i, basedir+outputDirUnfiltered+valedoFolderAv, 'av')
+    mf.buildTimestampTable(listExtractedValedoData, i, basedir+outputDirUnfiltered+valedoFolderAv, 'angVel')
 
 # create a time stamp table with angle values for each axis of the 3 valedo sensors
 # for i in range(4, 7):
@@ -72,16 +71,17 @@ mf.computeRawData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirU
 sdFactor = 1.75
 sampleRange = 10
 meaned_threes_av_data = mf.filterData(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirFiltered+valedoFolderAv, sampleRange, sdFactor)
+# meaned_threes_av_data = mf.filterDataThrees(basedir+outputDirUnfiltered+valedoFolderAv, basedir+outputDirFiltered+valedoFolderAv, sampleRange, sdFactor)
 
 
-#Create copy of the filtered data of valedo yaw(x)-axis and shift it (+10% of range)
+#Create copy of the filtered data of valedo x-axis and shift it (+10% of range)
 unshiftedYawValedo = meaned_threes_av_data[0][:]
 yawShift = (np.max(unshiftedYawValedo[1])-np.min(unshiftedYawValedo[1]))*0.1
 for i in range(len(unshiftedYawValedo[1])):
     unshiftedYawValedo[1][i] += yawShift
 
 #create plot for yaw axis (unfiltered sensor 1 vs meaned_threes)
-mf.drawTwinPlot('Valedo_ang.vel._transversal_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
+mf.drawTwinPlot('Valedo_angVel_transversal_single_vs_3_filtered', 'deg/s', listExtractedValedoData[0][0], unshiftedYawValedo[0], listExtractedValedoData[0][1], unshiftedYawValedo[1], basedir+outputDirMultiPlots)
 
 # Process SwayStar data
 # Check if results folder already exists
@@ -96,11 +96,18 @@ if not os.path.exists(basedir+outputDirUnfiltered+swayFolderAngles):
 
 valedoShiftY = 10 # y-shift of the valedo data in ..% in respect of the swayStar range (y-axis)
 
+#shift valedo data over x-axis for alignment with sway data
+for i in range(3):
+    for j in range(len(unfilteredValedoData[i][0])):
+        unfilteredValedoData[i][0][j] +=valedoTimeShift
+    for j in range(len(meaned_threes_av_data[i][0])):
+        meaned_threes_av_data[i][0][j] +=valedoTimeShift
+
 for i in range(len(listSway)):
     print '\n----------------------------------------\nComputing SwayStar data ...'
     extractedData = mf.extractDataSwayStar(basedir+'/'+listSway[i])
 
-    axisName = ['SwayStar_ang.vel._lateral(roll)', 'SwayStar_ang.vel._sagittal(pitch)', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
+    axisName = ['SwayStar_angVel_lateral(roll)', 'SwayStar_angVel_sagittal(pitch)', 'SwayStar_angle_roll', 'SwayStar_angle_pitch']
     yAxis = ['deg/sec', 'deg/sec', 'deg', 'deg']
     singleTrigger = 0 # This trigger makes sure, that the time stamps for the cut only get subtracted once (for the single sensor data only)
     cutCountSingle = 0
@@ -175,7 +182,7 @@ for i in range(len(listSway)):
 
 #write valedo time shift into output file:
 outputFile = open(basedir+'shift_valedo.txt', 'w')
-outputFile.write('Time shift valedo: '+str(timeShift)+' sec\n')
+outputFile.write('Time shift valedo: '+str(valedoTimeShift)+' sec\n')
 outputFile.write('y-shift of valedo data (single(-) and meaned_threes(+)): '+str(valedoShiftY)+' %\n')
 outputFile.close()
 
