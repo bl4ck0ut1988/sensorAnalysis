@@ -39,7 +39,7 @@ def drawTwinPlot(axisName, yLabel, timeStampsValedoSingle, timeStampsValedoFilte
     #plt.xlim([0,100])
     # plt.plot(x, y)
     plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered')
-    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered(shift +10%)')
+    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered(+ shift)')
     plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(baseDirectory+axisName+'.png')
     plt.clf()
@@ -55,8 +55,8 @@ def drawMultiPlot(axisName, yLabel, timeStampsValedoSingle, timeStampsValedoFilt
     plt.ylabel(yLabel)
     # plt.xlim([0,100])
     # plt.plot(x, y)
-    plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered(+ shift)')
-    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered(- shift)')
+    plt.plot(timeStampsValedoSingle, valuesValedoSingle, label='Valedo 1 sensor unfiltered(- shift)')
+    plt.plot(timeStampsValedoFiltered, valuesValedoFiltered, label='Valedo 3 sensors filtered(+ shift)')
     plt.plot(timeStampsSway, valuesSway, label='SwayStar')
     plt.legend(loc=1,prop={'size':7.5})
     plt.savefig(baseDirectory+axisName+'.png')
@@ -349,13 +349,18 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
         currentAxisData.append(sensor2)
         currentAxisData.append(sensor3)
 
-        for j in range(1, 4): # loop trough every sensor(1-3)
-            tempFilteredList = currentAxisData[j][:] # create copy of current list (new gaps will be added to this list).
+        # loop trough every sensor(1-3)
+        for j in range(1, 4):
+            # create copy of current list (new gaps will be added to this list).
+            tempFilteredList = currentAxisData[j][:]
 
-            for k in range(0, len(currentAxisData[j])-5, 5): # take current 10 values for the algorithm and afterwards move forward 5 "steps". Note that the untouched values are cut out of the analysis
+            # Take the current 10 values for the calculations and afterwards advance 5 samples.
+            # note that the samples untouched by the algorithm are cut out of the analysis.
+            for k in range(0, len(currentAxisData[j])-5, 5):
                 tempValueList = []
                 for m in range(sampleRange):
-                    if not currentAxisData[j][k+m] == '': # Extract the current Values (without gaps). --> used for calculation of mean/sd
+                    # extract the current Values (without gaps). --> used for calculation of mean/sd
+                    if not currentAxisData[j][k+m] == '':
                         tempValueList.append(currentAxisData[j][k+m])
 
                 tempMean = np.mean(tempValueList)
@@ -363,11 +368,13 @@ def filterData(fileSource, fileDestination, sampleRange, sdFactor):
 
                 # check criteria for every value in the filtered list and replace with gap if out of range.
                 for m in range(sampleRange):
-                    if not tempFilteredList[k+m] == '': # before comparing to mean and sd, make sure it is a float
+                    # before comparing to mean and sd, make sure it is a float
+                    if not tempFilteredList[k+m] == '':
                         if tempFilteredList[k+m] > (tempMean+sdFactor*tempSd) or tempFilteredList[k+m] < (tempMean-sdFactor*tempSd):
                             tempFilteredList[k+m] = ''
 
-            currentAxisData[j] = tempFilteredList #set the corrected (filtered list) with added gaps
+            # set the corrected (filtered list) with added gaps
+            currentAxisData[j] = tempFilteredList
 
         # Setup the excel output file for the filtered data of a specific axis for all 3 sensors.
         workbook = xlsxwriter.Workbook(fileDestination+'/filtered_'+axisDataFiles[i])
@@ -603,14 +610,16 @@ def filterDataThrees(fileSource, fileDestination, sampleRange, sdFactor):
         # drawHistoXrange(sensorMeans, axisDataFiles[i][:-5], fileLocation+'timestamp_tables/'+folderName+'/', -0.1, 0.1, valuesOfInterest)
 
 
-        #Apply three-filter onto already filtered data to smoothen it
+        # Apply smoothing filter over 3 samples to data filtered with moving band filter over 10 samples
         # New sample(t)= 0.25 * orig sample t-1 + 0.5 * orig sample t + 0.25 * orig sample t+1
         sensorMeansThrees = []
 
+        # Iterate over the original samples
         for j in range(1, len(sensorMeans)-1):
+            # Calculate new sample and add it to a list
             sensorMeansThrees.append(0.25*sensorMeans[j-1]+0.5*sensorMeans[j]+0.25*sensorMeans[j+1])
 
-        #Cut the first and last timeStamp out, because the corresponding value is not touched by the alogrithm
+        # Cut the first and last timeStamp out, because the corresponding values are not touched by the alogrithm
         del timeStampsMeans[0]
         del timeStampsMeans[-1]
 
